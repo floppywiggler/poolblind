@@ -1,0 +1,13 @@
+# build artifacts
+mapper/obj/
+payload/obj/
+mapper/*.exe
+mapper/*.ilk
+mapper/*.pdb
+mapper/*.sys
+payload/*.sys
+payload/*.pdb
+*.pdb
+
+# vulnerable driver - get it from loldrivers.io
+mapper/iqvw64e.sys
