@@ -95,11 +95,14 @@ Produces `mapper/mapper.exe`, `payload/payload.sys`, `payload/payload_stealthy.s
 
 1. Get `iqvw64e.sys` v1.3.1.0 from [loldrivers.io](https://www.loldrivers.io/).
    Drop it in `mapper/`.
-2. Enable test signing or disable DSE however you prefer. The NAL driver is signed.
-   The payload isn't.
-3. `mapper\mapper.exe` as Administrator.
-4. Default payload: `payload.sys`. Stealthy variant:
+2. `mapper\mapper.exe` as Administrator.
+3. Default payload: `payload.sys`. Stealthy variant:
    `copy mapper\payload_stealthy.sys mapper\payload.sys` then re-run.
+
+No test signing required. The NAL driver is legitimately signed and loads normally.
+The payload is never presented to the kernel loader — it is mapped directly into memory
+pages via `MmAllocateIndependentPagesEx`. CI validation only fires on the `NtLoadDriver`
+path; this technique bypasses that path entirely.
 
 ---
 
@@ -162,14 +165,16 @@ its location is build-specific — the runtime output shows the resolved address
 
 ## What's missing
 
-**DSE bypass.** The payload won't load without DSE disabled. Test signing mode
-(`bcdedit /set testsigning on`) is fine for a lab. Runtime DSE bypass is a separate
-BYOVD operation targeting `g_CiEnabled` or `CiInitialize` — not included here.
+**DSE bypass — but not for the payload.** DSE is not relevant to this technique. The
+payload never goes through `NtLoadDriver` or SCM, so CI never validates it. If you want
+to load a driver the conventional way (via SCM, with a device object and a proper
+`DriverEntry`), you need DSE disabled separately. That is a different technique for a
+different use case — it is not a missing piece of this one.
 
-**HVCI.** The `MmMapIoSpace` remap trick for writing to read-only kernel pages doesn't
+**HVCI.** The `MmMapIoSpace` remap trick used to write to read-only kernel pages doesn't
 survive Virtualization Based Security. If HVCI is on, the write primitive breaks.
 
 **Driver load detection.** The pool entry is gone, but the BYOVD driver load still
-leaves traces: SCM service registration, the physical memory IOCTLs. That's a separate
-problem and a separate layer. This project handles what happens after you already have
-kernel access.
+leaves traces: SCM service registration, the physical memory IOCTLs it responds to.
+That's a separate layer. This project handles what happens after you already have kernel
+access.
